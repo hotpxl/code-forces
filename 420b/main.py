@@ -20,14 +20,17 @@ if __name__ == '__main__':
     if online:
         possible &= ~offline
     for i in messages:
+        num = (1 << i[1])
         if i[0] == '+':
-            offline &= ~(1 << i[1])
-            online |= (1 << i[1])
+            offline &= ~num
+            online |= num
+            if online:
+                possible &= ~offline
         else:
-            offline |= (1 << i[1])
-            online &= ~(1 << i[1])
-        if online:
-            possible &= ~offline
+            offline |= num
+            online &= ~num
+            if online:
+                possible &= ~num
     possible |= nonExistent
     if possible:
         counter = 0
