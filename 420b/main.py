@@ -5,34 +5,40 @@ if __name__ == '__main__':
     messages = [sys.stdin.readline().split() for i in range(messageNum)]
     for i in messages:
         i[1] = int(i[1])
-    nonExistent = set(range(1, participantNum + 1))
-    online = set()
-    offlineAtFirst = set()
+    nonExistent = ((1 << participantNum) - 1) << 1
+    online = 0
+    offlineAtFirst = 0
     for i in messages:
-        nonExistent.discard(i[1])
         if i[0] == '+':
-            offlineAtFirst.add(i[1])
+            offlineAtFirst |= (1 << i[1])
         else:
-            if i[1] not in offlineAtFirst:
-                online.add(i[1])
-    nonExistent -= online | offlineAtFirst
-    possible = set(range(1, participantNum + 1))
-    offline = possible - nonExistent - online
+            if not offlineAtFirst & (1 << i[1]):
+                online |= (1 << i[1])
+    nonExistent &= ~(online | offlineAtFirst)
+    possible = ((1 << participantNum) - 1) << 1
+    offline = possible & ~(nonExistent | online)
     if online:
-        possible -= offline
+        possible &= ~offline
     for i in messages:
         if i[0] == '+':
-            offline.discard(i[1])
-            online.add(i[1])
+            offline &= ~(1 << i[1])
+            online |= (1 << i[1])
         else:
-            offline.add(i[1])
-            online.discard(i[1])
+            offline |= (1 << i[1])
+            online &= ~(1 << i[1])
         if online:
-            possible -= offline
+            possible &= ~offline
     possible |= nonExistent
     if possible:
-        print(len(possible))
-        print(' '.join(map(str, sorted(list(possible)))))
+        counter = 0
+        boss = []
+        while possible:
+            possible >>= 1
+            counter += 1
+            if possible & 0x01:
+                boss.append(counter)
+        print(len(boss))
+        print(' '.join(map(str, boss)))
     else:
         print(0)
 
