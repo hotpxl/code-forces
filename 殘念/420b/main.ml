@@ -1,6 +1,6 @@
 open Set
 
-exception Invalid_input
+exception InvalidInput
 
 module IntSet = Set.Make(
   struct
@@ -9,21 +9,29 @@ module IntSet = Set.Make(
   end
 )
 
+type status =
+  | Uninitialized
+  | FoundOnline of int
+  | FoundOffline of int
+  | NotFound
+
 let (|>) x f = f x
 
-let rec make_list = fun len f ->
+let rec makeList = fun len f ->
   if len = 0 then
     []
   else
-    (f ()) :: (make_list (len - 1) f)
+    (f ()) :: (makeList (len - 1) f)
 
-let find_never_appeared = fun records ->
-  List.fold_left (fun accum (_, ele) ->
-    IntSet.add ele accum
-  ) IntSet.empty records
+let rec range = fun s e ->
+  if s < e then
+    s :: range (s + 1) e
+  else
+    []
 
-let find_possible_leader = fun records ->
-  List
+let findHidden = fun records n ->
+
+
 
 let () =
   let (n, m) = read_line ()
@@ -34,16 +42,16 @@ let () =
     | a :: [b] ->
       (a, b)
     | _ ->
-      raise Invalid_input
+      raise InvalidInput
   in
-  let records = make_list m (fun () ->
+  let records = makeList m (fun () ->
     read_line ()
     |> Str.split (Str.regexp " +")
     |> fun li -> match li with
       | a :: [b] ->
         ((if a = "+" then 1 else 0), (int_of_string b))
       | _ ->
-        raise Invalid_input
+        raise InvalidInput
   )
   in
   ignore (find_never_appeared records);
