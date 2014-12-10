@@ -8,6 +8,21 @@ let rec makeList = fun len f ->
   else
     (f ()) :: (makeList (len - 1) f)
 
+let printRes = fun result ->
+  let rec printOne = fun number n ->
+    let newNumber = Big_int.shift_right_big_int number 1 in
+    if Big_int.eq_big_int number Big_int.zero_big_int then
+      []
+    else if Big_int.eq_big_int (Big_int.and_big_int Big_int.unit_big_int number) Big_int.zero_big_int then
+      printOne newNumber (n + 1)
+    else
+      n :: (printOne newNumber (n + 1))
+  in
+  let l = printOne (Big_int.shift_right_big_int result 1) 1 in
+  print_int (List.length l) |> print_newline;
+  List.iter (fun ele -> Printf.printf "%d " ele) l
+  |> print_newline
+
 let findAppearance = fun records n ->
   let all = Big_int.pred_big_int (Big_int.shift_left_big_int Big_int.unit_big_int (n + 1)) in
   let show = List.fold_left (fun accum (_, id) ->
@@ -17,17 +32,15 @@ let findAppearance = fun records n ->
   in
   (show, Big_int.sub_big_int all show)
 
-let findXMan = fun records n ->
+let findLastXMan = fun records n ->
   let all = Big_int.pred_big_int (Big_int.shift_left_big_int Big_int.unit_big_int (n + 1)) in
-  List.fold_left (fun (onlineSet, x, xOnline) (goOnline, id) ->
+  List.fold_left (fun (onlineSet, x) (goOnline, id) ->
     if goOnline then
       let onlineSet' =
         Big_int.shift_left_big_int Big_int.unit_big_int id
         |> Big_int.or_big_int onlineSet
       in
-      let x' = if id <> x && not xOnline then -1 else x in
-      let xOnline' = if id = x then true else xOnline in
-      (onlineSet', x', xOnline')
+      (onlineSet', x)
     else
       let onlineSet' =
         Big_int.shift_left_big_int Big_int.unit_big_int id
@@ -40,52 +53,38 @@ let findXMan = fun records n ->
         |> Big_int.eq_big_int Big_int.zero_big_int
         |> not
       in
-      let nowEmpty = Big_int.eq_big_int Big_int.zero_big_int onlineSet' in
-      let x' =
-        if exists then
-          x
-        else
-          if nowEmpty then
-            id
-          else
+      let x' = if exists then x else id in
+      (onlineSet', x')
+  ) (Big_int.zero_big_int, 0) records
+
+let findLeader = fun records possible n ->
+  let all = Big_int.pred_big_int (Big_int.shift_left_big_int Big_int.unit_big_int (n + 1)) in
+  let rec process = fun records onlineSet possible ->
+      match records with
+      | (goOnline, id) :: tl ->
+        if goOnline then
+          let onlineSet' =
+            Big_int.shift_left_big_int Big_int.unit_big_int id
+            |> Big_int.or_big_int onlineSet
+          in
+          if Big_int.eq_big_int Big_int.zero_big_int onlineSet && id <> possible then
             -1
-      in
-      let xOnline' = if id = x || not exists then false else xOnline in
-      (onlineSet', x', xOnline')
-  ) (Big_int.zero_big_int, 0, true) records
-
-let findNormalLeader = fun records possible ->
-  List.fold_left (fun (onlineSet, possible) (goOnline, id) ->
-    if goOnline then
-      let onlineSet' = IntSet.add id onlineSet in
-      let possible' =
-        if not (IntSet.is_empty onlineSet) then
-          IntSet.remove id possible
+          else
+            process tl onlineSet' possible
         else
-          IntSet.singleton id
-          |> IntSet.inter possible
-      in
-      (onlineSet', possible')
-    else
-      let onlineSet' = IntSet.remove id onlineSet in
-      let possible' =
-        if not (IntSet.is_empty onlineSet') then
-          IntSet.remove id possible
-        else
-          possible
-      in
-      (onlineSet', possible')
-  ) (IntSet.empty, possible) records
-
-let printRes = fun result ->
-  let l = IntSet.fold (fun ele l ->
-    ele :: l
-  ) result []
-  |> List.rev
+          let onlineSet' =
+            Big_int.shift_left_big_int Big_int.unit_big_int id
+            |> Big_int.xor_big_int all
+            |> Big_int.and_big_int onlineSet
+          in
+          if not (Big_int.eq_big_int Big_int.zero_big_int onlineSet') && id = possible then
+            -1
+          else
+            process tl onlineSet' possible
+      | [] ->
+        possible
   in
-  print_int (List.length l)
-  |> print_newline;
-  List.iter (fun ele -> Printf.printf "%d " ele) l
+  process records (Big_int.shift_left_big_int Big_int.unit_big_int possible) possible
 
 let () =
   let (n, m) = read_line ()
@@ -110,15 +109,18 @@ let () =
   |> List.rev
   in
   let (show, hidden) = findAppearance records n in
-  let (_, xMan, _) = findXMan records in
-  (* Not found *)
-  (match xMan with
-  | 0 ->
-    let (_, ld) = findNormalLeader records show in
-    printRes (IntSet.union hidden ld)
-  | -1 ->
+  let (_, xMan) = findLastXMan records n in
+  let possible =
+    if xMan = 0 then
+      let (_, id) = List.hd records in
+      id
+    else
+      xMan
+  in
+  let res = findLeader records possible n in
+  if res = -1 then
     printRes hidden
-  | _ ->
-    printRes (IntSet.add xMan hidden)
-  )
-  |> print_newline
+  else
+    Big_int.shift_left_big_int Big_int.unit_big_int res
+    |> Big_int.or_big_int hidden
+    |> printRes
