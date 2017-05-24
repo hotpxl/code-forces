@@ -74,8 +74,8 @@ int main() {
         dp[i][j] = -1;
       }
     }
-    for (char c = 'a'; c <= 'z'; ++c) {
-      if (orig[0] == '?' || orig[0] == c) {
+    if (orig[0] == '?') {
+      for (char c = 'a'; c <= 'z'; ++c) {
         int next_state = jump_table[0][c - 'a'];
         int cnt = 0;
         if (next_state == static_cast<int>(vic.size())) {
@@ -83,14 +83,22 @@ int main() {
         }
         dp[0][next_state] = cnt;
       }
+    } else {
+      char c = orig[0];
+      int next_state = jump_table[0][c - 'a'];
+      int cnt = 0;
+      if (next_state == static_cast<int>(vic.size())) {
+        ++cnt;
+      }
+      dp[0][next_state] = cnt;
     }
     for (size_t i = 0; i + 1 < orig.size(); ++i) {
       for (size_t j = 0; j < vic.size() + 1; ++j) {
         if (dp[i][j] == -1) {
           continue;
         }
-        for (char c = 'a'; c <= 'z'; ++c) {
-          if (orig[i + 1] == '?' || orig[i + 1] == c) {
+        if (orig[i + 1] == '?') {
+          for (char c = 'a'; c <= 'z'; ++c) {
             int next_state = jump_table[j][c - 'a'];
             int cnt = dp[i][j];
             if (next_state == static_cast<int>(vic.size())) {
@@ -98,6 +106,14 @@ int main() {
             }
             dp[i + 1][next_state] = max(dp[i + 1][next_state], cnt);
           }
+        } else {
+          char c = orig[i + 1];
+          int next_state = jump_table[j][c - 'a'];
+          int cnt = dp[i][j];
+          if (next_state == static_cast<int>(vic.size())) {
+            ++cnt;
+          }
+          dp[i + 1][next_state] = max(dp[i + 1][next_state], cnt);
         }
       }
     }
